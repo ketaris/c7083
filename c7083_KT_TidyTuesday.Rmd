@@ -1,0 +1,88 @@
+---
+title: "Tidy Tuesday Mini-Project"
+author: "Katie Taris"
+date: "2023-01-13"
+output: html_document
+---
+Source:
+https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-09-22
+
+The task was to take the Himalayan dataset from a previous Tidy Tuesday project and
+create a data visualisation. 
+In total there were 3 CSV files, here we have used the peaks "file".
+
+```{r setup, include=TRUE}
+
+if(!require("tidyverse")) install.packages("tidyverse")
+library(tidyverse)
+#members <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/members.csv')
+#expeditions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/expeditions.csv')
+peaks <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/peaks.csv')
+
+## EDA ####
+## Scatterplot
+plot(x = peaks$first_ascent_year, y = peaks$height_metres)
+#year 201 not valid by USA
+peaks3 <- filter(peaks, peak_id != "SPH2")
+plot(x = peaks3$first_ascent_year, y = peaks3$height_metres)
+filter(peaks3, height_metres > 7500)
+#42 mountains higher than 7500m
+filter(peaks3, height_metres > 8000)
+#16 mountains higher than 8000m
+ggplot(peaks3) +
+  aes(x = climbing_status,
+      y = height_metres) +
+  geom_boxplot()
+table(peaks3$climbing_status)
+summary(peaks3$climbing_status)
+
+## Create Sankey Plot ####
+library(networkD3)
+library(dplyr)
+
+#need to make tbl into df
+peaksdf = as.data.frame(peaks_import4)
+
+nodes <- data.frame(
+  name=c(as.character(peaksdf$source),
+         as.character(peaksdf$target)) %>% unique()
+)
+
+peaksdf$IDsource <- match(peaksdf$source, nodes$name)-1
+peaksdf$IDtarget <- match(peaksdf$target, nodes$name)-1
+
+ColourScal ='d3.scaleOrdinal() .range(["#fff7fb","#ece7f2","#d0d1e6","#a6bddb", "#74a9cf","#3690c0", "#0570b0","#045a8d","#023858"])'
+
+peakSankey <- sankeyNetwork(Links = peaksdf, Nodes = nodes,
+                   Source = "IDsource", Target = "IDtarget",
+                   Value = "value", NodeID = "name",
+                   sinksRight = FALSE, colourScale=ColourScal,
+                   fontFamily = "sans-serif",
+                   fontSize = 13, nodeWidth = 40)
+peakSankey
+
+## Create barplot ####
+# Install ggthemes package
+install.packages('ggthemes', dependencies = TRUE)
+library(ggthemes)
+library(ggplot2)
+
+peaks_import6$Sumhtkm <- peaks_import6$Sumht/1000
+
+peakbar <- ggplot(data = peaks_import6, 
+                  aes(x = reorder(Country, -Sumhtkm), y = Sumhtkm)) + 
+  geom_bar(stat='identity') + 
+  theme_economist()+
+  theme(axis.text.x=element_text(angle=90,hjust=1),
+        axis.title.y.left = element_text(hjust=1, vjust = 3),
+        plot.title = element_text(size = 16, colour = "white"),
+        text = element_text(family = "Comic Sans MS")) +
+  labs(x = NULL, y = "Distance (km)") +
+  ggtitle("Groundbreaking distance by country") +
+  ylim(0, 1000)
+  
+peakbar
+
+```
+
+
